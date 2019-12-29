@@ -1,32 +1,25 @@
-#!/usr/bin/python
 from getpass import getpass
-import pyperclip
 from seedstorage import SeedStorage
-from totp import TOTP
+from code import getCode
 
 def main(argv):
     if len(argv) < 3:
-        print "totp <command> <name> [seed]"
-        print "commands:"
-        print "  add: add new seed"
-        print "  get: get code"
-        print "  cp: copy code to clipboard"
+        print("totp <command> <name>")
+        print("commands:")
+        print("  add <name>: add new seed")
+        print("  get <name>: print the code")
         exit()
 
-    [ app, command, name ] = argv[:3]
+    [ _, cmd, name ] = argv[:3]
 
     storage = SeedStorage(name, getpass())
 
-    if command == 'cp' or command == 'get':
-        otp = TOTP(storage.get())
-        code = otp.gen()
+    if cmd == 'get':
+        seed = storage.get()
+        code = getCode(seed) 
+        print(code)
 
-        if command == 'cp':
-            pyperclip.copy(code)
-
-        if command == 'get':
-            print code
-
-    if command == 'add':
-        storage.save(args[1])
+    if cmd == 'add':
+        seed = getpass('Seed:')
+        storage.save(seed)
 

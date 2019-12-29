@@ -1,37 +1,33 @@
-import os
+from os import path, mkdir
+from base64 import b32decode
+import struct
+import hashlib
 
-def hexToBytes(x):
-    return [int(x[i:i+2], 16) for i in range(0, len(x), 2)]
+root = path.expanduser('~/.totp/')
 
-def bytesToHex(x):
-    return "".join(["%02x" % x[i] for i in range(len(x))])
+def xor(a, b):
+    return bytearray(a[i] ^ b[i] for i in range(len(a)))
 
-def bytesToStr(x):
-    return "".join(map(chr, x))
-
-def strToBytes(x):
-    return map(ord, x)
+def hashPassword(pw):
+    return bytearray(hashlib.sha1(pw).digest())[:10]
 
 class SeedStorage(object):
     def __init__(self, name, pw):
-        self.filename = os.path.expanduser('~/.totp/' + name)
-        self.pw = map(ord, pw)
-
-    def xor(self, seed):
-        pwlen = len(self.pw)
-        return [seed[i] ^ self.pw[i % pwlen] for i in range(len(seed))]
+        if not path.isdir(root):
+            mkdir(root)
+        self.filename = path.join(root, name)
+        self.pw = hashPassword(pw)
 
     def get(self):
-        f = open(self.filename)
-        raw = f.readline()
+        f = open(self.filename, 'rb')
+        seed = bytearray(f.read())
         f.close()
 
-        seed = hexToBytes(raw)
-        return bytesToStr(self.xor(seed))
+        return xor(seed, self.pw)
 
     def save(self, seed):
-        seed = strToBytes(seed)
+        seed = bytearray(b32decode(seed, True))
 
-        f = open(self.filename, 'w')
-        f.write(bytesToHex(self.xor(seed)))
+        f = open(self.filename, 'wb')
+        f.write(xor(seed, self.pw))
         f.close()
